@@ -6,7 +6,6 @@ import math
 from collections import defaultdict
 from itertools import chain
 import numpy as np
-import heapq
 
 from sentence_transformers import SentenceTransformer
 from transformers import logging as hf_logging
@@ -33,8 +32,6 @@ class LSHIndex:
     def __init__(self, vectors, num_tables, num_bits, **kwargs):
         if not isinstance(vectors, np.ndarray) or not isinstance(num_tables, int) or not isinstance(num_bits, int):
           raise ValueError("vectors must be numpy arrays and num_bits and num_tablemust be int type")
-        if not isinstance(vectors, np.ndarray):
-          raise ValueError("vectors must be with the same dtype")
         if vectors.dtype != np.float32:
             raise ValueError("vectors must be float32")
         self.vectors = vectors
