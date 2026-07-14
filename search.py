@@ -23,7 +23,7 @@ hf_logging.set_verbosity_error()
 def cosine_similarity(a, b):
     if not isinstance(a, np.ndarray) or not isinstance(b, np.ndarray):
         raise ValueError("a and b must be numpy arrays")
-     if a.ndim != 1 or b.ndim != 1 or a.shape != b.shape:
+    if a.ndim != 1 or b.ndim != 1 or a.shape != b.shape:
         raise ValueError("a and b must be 1-D arrays with the same shape")
     if np.all(a == 0) or np.all(b == 0):
         return 0.0
@@ -41,31 +41,27 @@ class LSHIndex:
         self.num_tables = num_tables
         self.num_bits = num_bits
         seed = kwargs.get("seed", 42)
-        RNG = np.random.default_rng(seed)
+        rng = np.random.default_rng(seed)
         self.planes = rng.normal(size=(num_tables, num_bits, vectors.shape[1])).astype(np.float32)
         self.tables = self._build_tables()
         
-    def _build_tables(): 
-      tables = []
-      for idx in range(self.num_tables): # ריצה על כל INDEPANDET HASH
-        table = {}
-        planes = self.planes[idx]
-        for n, d in enumerate(self.vectors): 
-          dot_product = (np.dot(planes, d) >= 0).astype(int) # באיזה צד של החציצה הויקטור
-          key = 0
-          for i in range(self.num_bits):
-            key =+ dot_product[i]*(2**i)
-          if key not in table:
-            table[key] = []
-            table[key].append(n)
-        tables.append(dict(table))
-    return tables
+    def _build_tables(self):
+        tables = []
+        for idx in range(self.num_tables):
+            table = {}
+            planes = self.planes[idx]
+            for n, d in enumerate(self.vectors):
+                dot_product = (np.dot(planes, d) >= 0).astype(int)
+                key = sum(dot_product[i] * (2 ** i) for i in range(self.num_bits))
+                if key not in table:
+                    table[key] = []
+                table[key].append(n)
+            tables.append(dict(table))
+        return tables
   
-    def query(self, q_vec, k):
-        
+    def query(self, q_vec, k):       
       if k <=0:
-          return []
-          
+          return []          
       matched_hashes = set()
       heap = []
       for idx in range(self.num_tables):
@@ -80,9 +76,8 @@ class LSHIndex:
           else:
               if score > heap[0][0]:
                   heapq.heapreplace(heap, item)      
-      scoretables = sorted(heap, reverse=True) #O(k log k)
-      return scoretables
-
+      return sorted(heap, reverse=True) #O(k log k)
+       
 def search(query, index, encoder, movies, k=5):
     encoded = encoder.encode(query)
     encoded = np.asarray(encoded, dtype=np.float32)
@@ -92,4 +87,4 @@ def search(query, index, encoder, movies, k=5):
         movie = dict(movies[idx])
         movie["score"] = float(score)
         res.append(movie)
-  return res;
+    return res
