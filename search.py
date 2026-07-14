@@ -77,7 +77,11 @@ class LSHIndex:
       return scoretables
 
 def search(query, index, encoder, movies, k=5):
-  encoded = encoder.encode(query)
-  idx = indxe.query(encoded, k)
-  res = "item: " + movies(i(1)) + " score: "+ i(0) for i in emomerate(idx)
+    encoded = encoder.encode(query)
+    results = index.query(encoded, k)
+    res = []
+    for score, idx in results:
+        movie = dict(movies[idx])
+        movie["score"] = float(score)
+        res.append(movie)
   return res;
