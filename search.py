@@ -23,25 +23,28 @@ hf_logging.set_verbosity_error()
 def cosine_similarity(a, b):
     if not isinstance(a, np.ndarray) or not isinstance(b, np.ndarray):
         raise ValueError("a and b must be numpy arrays")
-    if a.dtype != np.float32 or b.dtype != np.float32:
-        raise ValueError("a and b must be with the same dtype")
+     if a.ndim != 1 or b.ndim != 1 or a.shape != b.shape:
+        raise ValueError("a and b must be 1-D arrays with the same shape")
     if np.all(a == 0) or np.all(b == 0):
         return 0.0
-    return float32(np.dot(a, b)/(np.linalg.norm(a)*np.linalg.norm(b)))
+    return np.float32(np.dot(a, b)/(np.linalg.norm(a)*np.linalg.norm(b)))
 
 class LSHIndex:
     def __init__(self, vectors, num_tables, num_bits, **kwargs):
-        if not isinstance(vectors, np.ndarray) or not isinstance(num_table, int) or not isinstance(num_bit, int):
+        if not isinstance(vectors, np.ndarray) or not isinstance(num_tables, int) or not isinstance(num_bits, int):
           raise ValueError("vectors must be numpy arrays and num_bits and num_tablemust be int type")
-        if vectors.dtype != np.float32:
+        if not isinstance(vectors, np.ndarray):
           raise ValueError("vectors must be with the same dtype")
+        if vectors.dtype != np.float32:
+            raise ValueError("vectors must be float32")
         self.vectors = vectors
         self.num_tables = num_tables
         self.num_bits = num_bits
         seed = kwargs.get("seed", 42)
         RNG = np.random.default_rng(seed)
         self.planes = rng.normal(size=(num_tables, num_bits, vectors.shape[1])).astype(np.float32)
-        self.tables = self.build_tables
+        self.tables = self._build_tables()
+        
     def _build_tables(): 
       tables = []
       for idx in range(self.num_tables): # ריצה על כל INDEPANDET HASH
@@ -52,13 +55,17 @@ class LSHIndex:
           key = 0
           for i in range(self.num_bits):
             key =+ dot_product[i]*(2**i)
-            if key not in table:
-              table[key] = []
+          if key not in table:
+            table[key] = []
             table[key].append(n)
-            tables.append(dict(table))
+        tables.append(dict(table))
     return tables
   
     def query(self, q_vec, k):
+        
+      if k <=0:
+          return []
+          
       matched_hashes = set()
       heap = []
       for idx in range(self.num_tables):
@@ -78,6 +85,7 @@ class LSHIndex:
 
 def search(query, index, encoder, movies, k=5):
     encoded = encoder.encode(query)
+    encoded = np.asarray(encoded, dtype=np.float32)
     results = index.query(encoded, k)
     res = []
     for score, idx in results:
