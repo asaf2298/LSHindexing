@@ -24,22 +24,26 @@ def cosine_similarity(a, b):
         raise ValueError("a and b must be numpy arrays")
     if a.ndim != 1 or b.ndim != 1 or a.shape != b.shape:
         raise ValueError("a and b must be 1-D arrays with the same shape")
-    a = a.astype(float)
-    b = b.astype(float)
-    if np.all(a == 0) or np.all(b == 0):
-        return 0.0
-    return float(np.dot(a, b)/(np.linalg.norm(a)*np.linalg.norm(b)))
-
+    if a.dtype != np.float32:
+        a = a.astype(np.float32)
+    if b.dtype != np.float32:
+        b = b.astype(np.float32)
+    normA = np.linalg.norm(a)
+    normB = np.linalg.norm(b)
+    if (normA == 0) or (normB == 0):
+        return np.float32(0.0)
+    return np.float32(np.dot(a, b) / (normA * normB)) 
+    
 class LSHIndex:
     def __init__(self, vectors, num_tables, num_bits, **kwargs):
         if not isinstance(vectors, np.ndarray) or not isinstance(num_tables, int) or not isinstance(num_bits, int):
             raise ValueError("vectors must be numpy arrays and num_bits and num_tablemust be int type")
-        self.vectors = vectors.astype(float)
+        self.vectors = vectors.astype(np.float32)
         self.num_tables = num_tables
         self.num_bits = num_bits
         seed = kwargs.get("seed", 42)
         rng = np.random.default_rng(seed)
-        self.planes = rng.normal(size=(num_tables, num_bits, vectors.shape[1])).astype(float)
+        self.planes = rng.normal(size=(num_tables, num_bits, vectors.shape[1])).astype(np.float32)
         self.tables = self._build_tables()
 
     def _build_tables(self):
@@ -61,7 +65,7 @@ class LSHIndex:
             return []
         matched_hashes = set()
         heap = []
-        q_vec = q_vec.astype(float)
+        q_vec = q_vec.astype(np.float32)
         for idx in range(self.num_tables):
             dot_product_query = (np.dot(self.planes[idx], q_vec) >= 0).astype(int)
             key_query = sum(dot_product_query[i] * (2 ** i) for i in range(self.num_bits))
@@ -78,7 +82,7 @@ class LSHIndex:
 
 def search(query, index, encoder, movies, k=5):
     encoded = encoder.encode(query)
-    encoded = np.asarray(encoded, dtype=float)
+    encoded = np.asarray(encoded, dtype=np.float32)
     results = index.query(encoded, k)
     res = []
     for score, idx in results:
